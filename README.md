@@ -33,13 +33,18 @@ A GraphQL API for a simple message board application with user management and ra
    cd MessageBoard
    ```
 
-### 2. Access the Application
+### 2. Docker
+```bash
+docker compose up -d
+```
+
+### 3. Access the Application
 - **🎮 GraphQL Playground**: http://localhost:4000/graphql
 - **💚 Health Check**: http://localhost:4000/health
 
-### 3. Stop Services
+### 4. Stop Services
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## API Requirements
