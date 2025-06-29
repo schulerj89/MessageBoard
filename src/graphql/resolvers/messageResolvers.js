@@ -122,30 +122,6 @@ const messageResolvers = {
       }
     },
 
-    // Get system statistics
-    systemStats: async (parent, args, context) => {
-      try {
-        const startTime = Date.now();
-        
-        const [userStats, messageStats] = await Promise.all([
-          userService.getUserStats(),
-          messageService.getMessageStats()
-        ]);
-        
-        const responseTime = Date.now() - startTime;
-        logger.logGraphQLOperation('systemStats', args, context, responseTime);
-        
-        return {
-          userStats,
-          messageStats
-        };
-      } catch (error) {
-        logger.error('GraphQL systemStats query error:', error);
-        const handledError = handleGraphQLError(error);
-        throw new Error(handledError.message);
-      }
-    },
-
     // Health check
     health: async (parent, args, context) => {
       try {

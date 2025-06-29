@@ -36,12 +36,6 @@ const typeDefs = gql`
     error: String
   }
 
-  type UserStats {
-    totalUsers: Int!
-    activeUsers: Int!
-    recentSignups: Int!
-  }
-
   type MessageStats {
     totalMessages: Int!
     avgMessageLength: Float!
@@ -49,11 +43,6 @@ const typeDefs = gql`
     messagesInLastDay: Int!
     oldestMessage: Date
     newestMessage: Date
-  }
-
-  type SystemStats {
-    userStats: UserStats!
-    messageStats: MessageStats!
   }
 
   input MessageFilter {
@@ -86,8 +75,6 @@ const typeDefs = gql`
     rateLimitStatus(userId: ID!): RateLimitInfo!
     
     # Statistics queries
-    systemStats: SystemStats!
-    userStats(userId: ID): UserStats!
     messageStats(userId: ID): MessageStats!
     
     # Health check
