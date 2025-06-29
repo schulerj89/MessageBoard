@@ -13,6 +13,8 @@ class Database {
         ? environment.mongodb.testUri 
         : environment.mongodb.uri;
 
+      logger.info(`Connecting to MongoDB at ${mongoUri}...`);
+
       this.connection = await mongoose.connect(mongoUri, environment.mongodb.options);
       
       logger.info(`MongoDB connected: ${this.connection.connection.host}`);
