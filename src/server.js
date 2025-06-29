@@ -9,6 +9,7 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 async function startServer() {
   try {
+    logger.info('Loading environment configuration...', process.env);
     // Connect to database
     await database.connect();
     logger.info('Database connected successfully');

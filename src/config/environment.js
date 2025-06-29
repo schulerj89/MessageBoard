@@ -1,11 +1,7 @@
 const dotenv = require('dotenv');
-const logger = require('../utils/logger');
-const { log } = require('winston');
 
 // Load environment variables
 dotenv.config();
-
-logger.info('Loading environment configuration...', process.env);
 
 const environment = {
   // Server configuration
