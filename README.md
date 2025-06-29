@@ -1,6 +1,6 @@
 # Message Board API
 
-A GraphQL API built with Node.js, Express, and MongoDB for a simple message board application with user management and rate limiting.
+A GraphQL API for a simple message board application with user management and rate limiting.
 
 ## Features
 
@@ -13,157 +13,17 @@ A GraphQL API built with Node.js, Express, and MongoDB for a simple message boar
 
 ## Tech Stack
 
-- **Runtime**: Node.js
+- **Runtime**: Node.js 18
 - **Framework**: Express.js
 - **API**: GraphQL (Apollo Server)
 - **Database**: MongoDB with Mongoose ODM
-- **Rate Limiting**: Express Rate Limit with MongoDB store
-- **Security**: Helmet, express-validator
-- **Logging**: Winston
-- **Environment**: dotenv
+- **Cache/Rate Limiting**: Redis for atomic concurrent operations
+- **Containerization**: Docker & Docker Compose
 
-## Database Schema
+## 🚀 Quick Start with Docker
 
-### User Model
-```javascript
-{
-  _id: ObjectId,
-  name: String (required, min: 2, max: 50),
-  email: String (required, unique, validated),
-  createdAt: Date (default: Date.now),
-  postCount: Number (default: 0),
-  lastPostAt: Date
-}
-```
-
-### Message Model
-```javascript
-{
-  _id: ObjectId,
-  body: String (required, min: 1, max: 1000),
-  user: ObjectId (ref: 'User', required),
-  createdAt: Date (default: Date.now),
-  previousMessage: ObjectId (ref: 'Message'),
-  nextMessage: ObjectId (ref: 'Message')
-}
-```
-
-## GraphQL Schema
-
-### Types
-```graphql
-type User {
-  id: ID!
-  name: String!
-  email: String!
-  createdAt: String!
-  postCount: Int!
-  messages: [Message!]!
-}
-
-type Message {
-  id: ID!
-  body: String!
-  user: User!
-  createdAt: String!
-  previousMessage: Message
-  nextMessage: Message
-}
-
-type RateLimitInfo {
-  isLimited: Boolean!
-  remainingRequests: Int!
-  resetTime: String
-}
-
-type MessageResponse {
-  message: Message
-  rateLimitInfo: RateLimitInfo!
-}
-```
-
-### Queries
-```graphql
-type Query {
-  # Get all users
-  users: [User!]!
-  
-  # Get user by ID
-  user(id: ID!): User
-  
-  # Get all messages
-  messages: [Message!]!
-  
-  # Get messages by user ID
-  messagesByUser(userId: ID!): [Message!]!
-  
-  # Get rate limit status for user
-  rateLimitStatus(userId: ID!): RateLimitInfo!
-}
-```
-
-### Mutations
-```graphql
-type Mutation {
-  # Create a new user
-  createUser(name: String!, email: String!): User!
-  
-  # Post a new message
-  postMessage(userId: ID!, body: String!): MessageResponse!
-}
-```
-
-## API Endpoints
-
-### GraphQL Endpoint
-- **URL**: `POST /graphql`
-- **Playground**: `GET /graphql` (development only)
-
-### Health Check
-- **URL**: `GET /health`
-- **Response**: Server status and database connection
-
-## Rate Limiting
-
-- **Limit**: 10 messages per user per hour
-- **Storage**: MongoDB-based rate limit store
-- **Response**: Rate limit information included in all message posting responses
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Server Configuration
-PORT=4000
-NODE_ENV=development
-
-# MongoDB Configuration
-MONGODB_URI=mongodb://localhost:27017/messageboard
-MONGODB_URI_TEST=mongodb://localhost:27017/messageboard_test
-
-# Security
-JWT_SECRET=your_jwt_secret_here
-BCRYPT_ROUNDS=12
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=3600000
-RATE_LIMIT_MAX_REQUESTS=10
-
-# Logging
-LOG_LEVEL=info
-LOG_FILE=logs/app.log
-
-# CORS
-CORS_ORIGIN=http://localhost:3000
-```
-
-## Installation & Setup
-
-### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or cloud instance)
-- npm or yarn
+**Prerequisites:**
+- **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/)
 
 ### Local Development Setup
 
@@ -173,37 +33,42 @@ CORS_ORIGIN=http://localhost:3000
    cd MessageBoard
    ```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 2. Access the Application
+- **🎮 GraphQL Playground**: http://localhost:4000/graphql
+- **💚 Health Check**: http://localhost:4000/health
 
-3. **Environment setup**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your MongoDB connection string and other config
-   ```
+### 3. Stop Services
+```bash
+docker-compose down
+```
 
-4. **Start MongoDB**
-   ```bash
-   # If using local MongoDB
-   mongod
-   ```
+## API Requirements
 
-5. **Run the application**
-   ```bash
-   # Development mode with hot reload
-   npm run dev
-   
-   # Production mode
-   npm start
-   ```
+### User Properties
+- Name
+- Email
+- Creation Date
+- Number of Posts
 
-6. **Access the API**
-   - GraphQL Playground: http://localhost:4000/graphql
-   - Health Check: http://localhost:4000/health
+### Message Properties
+- Message Body
+- Creation Date
+- User
+- Previous Posted Message
+- Next Posted Message
 
-## Example Usage
+### API Operations
+- Create a User with Name and Email
+- Post Messages for a User with Message Body
+- List all Users
+- List all Messages for all Users
+- List Messages for a single User
+
+### Rate Limiting
+- Maximum 10 messages per user per hour
+- API responses include rate limit status
+
+## GraphQL Examples
 
 ### Create a User
 ```graphql
@@ -276,94 +141,27 @@ query {
 
 ```
 MessageBoard/
+├── docker-compose.yml          # Multi-service Docker setup
+├── Dockerfile                  # Node.js app container
+├── package.json               # Dependencies and scripts
 ├── src/
-│   ├── config/
-│   │   ├── database.js
-│   │   └── environment.js
-│   ├── models/
-│   │   ├── User.js
-│   │   └── Message.js
-│   ├── graphql/
-│   │   ├── typeDefs.js
-│   │   ├── resolvers/
-│   │   │   ├── userResolvers.js
-│   │   │   ├── messageResolvers.js
-│   │   │   └── index.js
-│   │   └── schema.js
-│   ├── middleware/
-│   │   ├── rateLimiter.js
-│   │   ├── security.js
-│   │   └── logger.js
-│   ├── services/
-│   │   ├── userService.js
-│   │   └── messageService.js
-│   ├── utils/
-│   │   ├── validation.js
-│   │   └── errors.js
-│   └── server.js
-├── logs/
-├── tests/
-├── .env
-├── .env.example
-├── .gitignore
-├── package.json
-└── README.md
+│   ├── server.js              # Main application entry
+│   ├── config/                # Database and environment config
+│   ├── models/                # User and Message schemas
+│   ├── graphql/               # GraphQL schema and resolvers
+│   ├── middleware/            # Rate limiting and security
+│   ├── services/              # Business logic
+│   └── utils/                 # Logging and error handling
+└── tests/                     # Test suites
 ```
-
-## Security Features
-
-- **Input Validation**: All inputs are validated using express-validator
-- **Rate Limiting**: Prevents message spam with 10 messages/hour limit
-- **Security Headers**: Helmet.js for security headers
-- **Environment Variables**: Sensitive data stored in environment variables
-- **Error Handling**: Comprehensive error handling without exposing internal details
-
-## Logging
-
-- **Winston Logger**: Structured logging with multiple levels
-- **Request Logging**: All API requests are logged
-- **Error Logging**: Errors are logged with stack traces
-- **Performance Logging**: Response times and database operations
 
 ## Testing
 
+**Docker must be running for tests:**
+
 ```bash
-# Run all tests
+npm install
 npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test:watch
 ```
 
-## Deployment
-
-### Environment Setup
-1. Set `NODE_ENV=production` in your environment
-2. Configure your MongoDB connection string
-3. Set appropriate CORS origins
-4. Configure logging levels
-
-### Docker Deployment
-```bash
-# Build Docker image
-docker build -t messageboard-api .
-
-# Run with Docker Compose
-docker-compose up -d
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new features
-5. Ensure all tests pass
-6. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+Tests use in-memory MongoDB and Redis instances via Docker containers.
