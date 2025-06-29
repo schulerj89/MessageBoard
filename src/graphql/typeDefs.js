@@ -29,22 +29,6 @@ const typeDefs = gql`
     windowMs: Int!
   }
 
-  type RateLimitUserDetail {
-    userId: ID!
-    currentRequests: Int!
-    remainingRequests: Int!
-    isLimited: Boolean!
-    usagePercentage: Float!
-  }
-
-  type RateLimitStats {
-    totalUsersWithRequests: Int!
-    limitedUsers: Int!
-    windowMs: Int!
-    maxRequests: Int!
-    userDetails: [RateLimitUserDetail!]!
-  }
-
   type MessageResponse {
     message: Message
     rateLimitInfo: RateLimitInfo!
@@ -100,7 +84,6 @@ const typeDefs = gql`
     
     # Rate limiting queries
     rateLimitStatus(userId: ID!): RateLimitInfo!
-    rateLimitStats: RateLimitStats!
     
     # Statistics queries
     systemStats: SystemStats!
@@ -121,13 +104,6 @@ const typeDefs = gql`
     postMessage(userId: ID!, body: String!): MessageResponse!
     updateMessage(id: ID!, body: String!): Message!
     deleteMessage(id: ID!): Boolean!
-  }
-
-  type Subscription {
-    # Real-time subscriptions
-    messageAdded: Message!
-    userAdded: User!
-    rateLimitWarning(userId: ID!): RateLimitInfo!
   }
 `;
 

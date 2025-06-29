@@ -60,25 +60,6 @@ const userResolvers = {
         throw new Error(handledError.message);
       }
     },
-
-    // Get user statistics
-    userStats: async (parent, args, context) => {
-      try {
-        const startTime = Date.now();
-        const { userId } = args;
-        
-        const stats = await userService.getUserStats(userId);
-        
-        const responseTime = Date.now() - startTime;
-        logger.logGraphQLOperation('userStats', args, context, responseTime);
-        
-        return stats;
-      } catch (error) {
-        logger.error('GraphQL userStats query error:', error);
-        const handledError = handleGraphQLError(error);
-        throw new Error(handledError.message);
-      }
-    }
   },
 
   Mutation: {

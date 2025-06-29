@@ -103,24 +103,6 @@ const messageResolvers = {
       }
     },
 
-    // Get rate limit statistics
-    rateLimitStats: async (parent, args, context) => {
-      try {
-        const startTime = Date.now();
-        
-        const stats = await messageService.getRateLimitStats();
-        
-        const responseTime = Date.now() - startTime;
-        logger.logGraphQLOperation('rateLimitStats', args, context, responseTime);
-        
-        return stats;
-      } catch (error) {
-        logger.error('GraphQL rateLimitStats query error:', error);
-        const handledError = handleGraphQLError(error);
-        throw new Error(handledError.message);
-      }
-    },
-
     // Get message statistics
     messageStats: async (parent, args, context) => {
       try {

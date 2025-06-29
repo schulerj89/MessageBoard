@@ -74,29 +74,6 @@ const resolvers = {
   User: userResolvers.User,
   Message: messageResolvers.Message,
 
-  // Subscription resolvers (placeholder for future implementation)
-  Subscription: {
-    messageAdded: {
-      // Placeholder for real-time message notifications
-      subscribe: () => {
-        // This would typically return an AsyncIterator
-        // For now, we'll leave it as a placeholder
-        throw new Error('Subscriptions not implemented yet');
-      }
-    },
-    userAdded: {
-      // Placeholder for real-time user notifications
-      subscribe: () => {
-        throw new Error('Subscriptions not implemented yet');
-      }
-    },
-    rateLimitWarning: {
-      // Placeholder for rate limit warnings
-      subscribe: () => {
-        throw new Error('Subscriptions not implemented yet');
-      }
-    }
-  }
 };
 
 module.exports = resolvers;

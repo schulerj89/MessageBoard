@@ -39,7 +39,7 @@ const createRedisClient = () => {
 // General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100,
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
@@ -231,33 +231,6 @@ class MessageRateLimiter {
 // Create singleton instance
 const messageRateLimiter = new MessageRateLimiter();
 
-// GraphQL-specific rate limiter
-const graphqlLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Higher limit for GraphQL since it's more flexible
-  message: {
-    error: 'Too many GraphQL requests, please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress;
-  },
-  handler: (req, res, next, options) => {
-    logger.warn('GraphQL Rate limit reached', {
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      operation: req.body?.operationName
-    });
-    
-    res.status(options.statusCode).json({
-      error: 'Too many GraphQL requests, please try again later.',
-      retryAfter: '15 minutes'
-    });
-  }
-});
-
 // Function to reset Redis client (useful for tests)
 const resetRedisClient = async () => {
   try {
@@ -281,7 +254,6 @@ const resetRedisClient = async () => {
 
 module.exports = {
   apiLimiter,
-  graphqlLimiter,
   messageRateLimiter,
   MessageRateLimiter,
   resetRedisClient

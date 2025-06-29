@@ -5,7 +5,7 @@ const database = require('./config/database');
 const schema = require('./graphql/schema');
 const logger = require('./utils/logger');
 const { setupSecurity, setupErrorHandling, setupHealthCheck } = require('./middleware/security');
-const { apiLimiter, graphqlLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 async function startServer() {
   try {
@@ -23,8 +23,7 @@ async function startServer() {
     setupHealthCheck(app);
 
     // Apply general API rate limiting
-    app.use('/graphql', graphqlLimiter);
-    app.use('/api', apiLimiter);
+    app.use('/graphql', apiLimiter); // Apply rate limiting for GraphQL endpoint
 
     logger.info(`Starting server in ${environment.nodeEnv} mode...`);
 
@@ -38,34 +37,14 @@ async function startServer() {
         environment.nodeEnv === 'development'
           ? require('apollo-server-core').ApolloServerPluginLandingPageGraphQLPlayground({
               settings: {
+                'schema.polling.enable': false,
                 'editor.theme': 'dark',
                 'editor.fontSize': 14,
                 'editor.fontFamily': '"Source Code Pro", "Consolas", "Inconsolata", "Droid Sans Mono", "Monaco", monospace',
                 'request.credentials': 'include',
               },
             })
-          : require('apollo-server-core').ApolloServerPluginLandingPageDisabled(),
-        // Custom plugin for operation timing and logging
-        {
-          requestDidStart() {
-            return {
-              didResolveOperation(requestContext) {
-                const startTime = Date.now();
-                requestContext.request.http.startTime = startTime;
-              },
-              willSendResponse(requestContext) {
-                const startTime = requestContext.request.http?.startTime;
-                if (startTime) {
-                  const duration = Date.now() - startTime;
-                  logger.info('GraphQL Operation timing', {
-                    operationName: requestContext.request.operationName,
-                    duration: `${duration}ms`
-                  });
-                }
-              }
-            };
-          }
-        }
+          : require('apollo-server-core').ApolloServerPluginLandingPageDisabled(),        
       ],
       context: ({ req, res }) => {
         return {
