@@ -97,26 +97,9 @@ class UserService {
 
   async getAllUsers(options = {}) {
     try {
-      const { active, limit = 50, offset = 0 } = options;
+      const { limit = 50, offset = 0 } = options;
       
-      let query = {};
-      
-      if (active !== undefined) {
-        if (active) {
-          // Users who posted in the last 30 days
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-          query.lastPostAt = { $gte: thirtyDaysAgo };
-        } else {
-          // Users who haven't posted in 30 days or never posted
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-          query.$or = [
-            { lastPostAt: { $lt: thirtyDaysAgo } },
-            { lastPostAt: null }
-          ];
-        }
-      }
-
-      const users = await User.find(query)
+      const users = await User.find({})
         .sort({ createdAt: -1 })
         .skip(offset)
         .limit(Math.min(limit, 100)); // Cap at 100
@@ -220,64 +203,6 @@ class UserService {
       
       logger.error('Error deleting user:', error);
       throw new Error('Failed to delete user');
-    }
-  }
-
-  async getUserStats(userId = null) {
-    try {
-      if (userId) {
-        // Get stats for specific user
-        const user = await User.findById(userId);
-        if (!user) {
-          throw new NotFoundError('User not found');
-        }
-
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const remainingPosts = await user.getRemainingPosts();
-
-        return {
-          totalPosts: user.postCount,
-          lastPostAt: user.lastPostAt,
-          accountAge: Math.floor((Date.now() - user.createdAt) / (1000 * 60 * 60 * 24)),
-          remainingPostsThisHour: remainingPosts,
-          canPost: await user.canPost()
-        };
-      } else {
-        // Get global user stats
-        const totalUsers = await User.countDocuments();
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        
-        const activeUsers = await User.countDocuments({
-          lastPostAt: { $gte: thirtyDaysAgo }
-        });
-        
-        const recentSignups = await User.countDocuments({
-          createdAt: { $gte: sevenDaysAgo }
-        });
-
-        return {
-          totalUsers,
-          activeUsers,
-          recentSignups
-        };
-      }
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-      
-      logger.error('Error getting user stats:', error);
-      throw new Error('Failed to get user statistics');
-    }
-  }
-
-  async getActiveUsers(days = 30) {
-    try {
-      return await User.getActiveUsers(days);
-    } catch (error) {
-      logger.error('Error fetching active users:', error);
-      throw new Error('Failed to fetch active users');
     }
   }
 }

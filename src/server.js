@@ -26,11 +26,47 @@ async function startServer() {
     app.use('/graphql', graphqlLimiter);
     app.use('/api', apiLimiter);
 
+    logger.info(`Starting server in ${environment.nodeEnv} mode...`);
+
     // Create Apollo Server
     const server = new ApolloServer({
       schema,
       introspection: environment.graphql.introspection,
-      playground: environment.graphql.playground,
+      // Configure landing page for Apollo Server v3
+      plugins: [
+        // Landing page configuration
+        environment.nodeEnv === 'development'
+          ? require('apollo-server-core').ApolloServerPluginLandingPageGraphQLPlayground({
+              settings: {
+                'editor.theme': 'dark',
+                'editor.fontSize': 14,
+                'editor.fontFamily': '"Source Code Pro", "Consolas", "Inconsolata", "Droid Sans Mono", "Monaco", monospace',
+                'request.credentials': 'include',
+              },
+            })
+          : require('apollo-server-core').ApolloServerPluginLandingPageDisabled(),
+        // Custom plugin for operation timing and logging
+        {
+          requestDidStart() {
+            return {
+              didResolveOperation(requestContext) {
+                const startTime = Date.now();
+                requestContext.request.http.startTime = startTime;
+              },
+              willSendResponse(requestContext) {
+                const startTime = requestContext.request.http?.startTime;
+                if (startTime) {
+                  const duration = Date.now() - startTime;
+                  logger.info('GraphQL Operation timing', {
+                    operationName: requestContext.request.operationName,
+                    duration: `${duration}ms`
+                  });
+                }
+              }
+            };
+          }
+        }
+      ],
       context: ({ req, res }) => {
         return {
           req,
@@ -68,30 +104,7 @@ async function startServer() {
         });
 
         return response;
-      },
-      plugins: [
-        // Custom plugin for operation timing and logging
-        {
-          requestDidStart() {
-            return {
-              didResolveOperation(requestContext) {
-                const startTime = Date.now();
-                requestContext.request.http.startTime = startTime;
-              },
-              willSendResponse(requestContext) {
-                const startTime = requestContext.request.http?.startTime;
-                if (startTime) {
-                  const duration = Date.now() - startTime;
-                  logger.info('GraphQL Operation timing', {
-                    operationName: requestContext.request.operationName,
-                    duration: `${duration}ms`
-                  });
-                }
-              }
-            };
-          }
-        }
-      ]
+      }
     });
 
     // Start Apollo Server
@@ -101,7 +114,18 @@ async function startServer() {
     server.applyMiddleware({ 
       app, 
       path: '/graphql',
-      cors: false // We handle CORS in our security middleware
+      cors: environment.nodeEnv === 'development' ? {
+        origin: [
+          'http://localhost:3000',
+          'http://localhost:4000',
+          'https://studio.apollographql.com',
+          'https://cdn.jsdelivr.net',
+          'https://unpkg.com'
+        ],
+        credentials: true,
+        methods: ['GET', 'POST', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Apollo-Require-Preflight']
+      } : false // Use security middleware CORS in production
     });
 
     // Setup error handling (must be last)

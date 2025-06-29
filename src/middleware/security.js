@@ -14,11 +14,19 @@ const setupSecurity = (app) => {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: environment.nodeEnv === 'development' 
+          ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://unpkg.com"]
+          : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: environment.nodeEnv === 'development'
+          ? ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"]
+          : ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
-        fontSrc: ["'self'"],
+        connectSrc: environment.nodeEnv === 'development'
+          ? ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com"]
+          : ["'self'"],
+        fontSrc: environment.nodeEnv === 'development'
+          ? ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"]
+          : ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
@@ -46,6 +54,18 @@ const setupSecurity = (app) => {
     origin: function (origin, callback) {
       // Allow requests with no origin (mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
+      
+      // Apollo Playground CDN domains
+      const apolloDomains = [
+        'https://cdn.jsdelivr.net',
+        'https://unpkg.com',
+        'https://studio.apollographql.com'
+      ];
+      
+      // Check if it's an Apollo CDN domain
+      if (apolloDomains.some(domain => origin.startsWith(domain))) {
+        return callback(null, true);
+      }
       
       const allowedOrigins = Array.isArray(environment.cors.origin) 
         ? environment.cors.origin 
