@@ -85,6 +85,13 @@ class MessageRateLimiter {
     return `rate_limit:user:${userId}:${windowStart}`;
   }
 
+  // Get consistent reset time for current window
+  getWindowResetTime() {
+    const windowStart = Math.floor(Date.now() / this.windowMs);
+    const windowEnd = (windowStart + 1) * this.windowMs;
+    return new Date(windowEnd);
+  }
+
   async checkAndRecordRequest(userId) {
     const redis = this.getRedisClient();
     if (!redis) {
@@ -92,7 +99,7 @@ class MessageRateLimiter {
       return {
         isLimited: false,
         remainingRequests: this.maxRequests - 1,
-        resetTime: new Date(Date.now() + this.windowMs),
+        resetTime: this.getWindowResetTime(),
         windowMs: this.windowMs,
         currentCount: 1,
         success: true
@@ -103,7 +110,7 @@ class MessageRateLimiter {
       const key = this.getKey(userId);
       const ttlSeconds = Math.ceil(this.windowMs / 1000);
       
-      // Use Lua script for atomic check-and-increment
+      // Use Lua script for atomic check-and-increment (used for concurrent requests)
       const luaScript = `
         local key = KEYS[1]
         local max_requests = tonumber(ARGV[1])
@@ -131,8 +138,8 @@ class MessageRateLimiter {
       const isLimited = isLimitedFlag === 1;
       const remainingRequests = Math.max(0, this.maxRequests - currentCount);
       
-      // Calculate reset time based on TTL (time remaining until key expires)
-      const resetTime = new Date(Date.now() + (ttl * 1000));
+      // Use consistent reset time based on window end, not TTL
+      const resetTime = this.getWindowResetTime();
       
       if (isLimited) {
         logger.warn('Rate limit exceeded', {
@@ -159,7 +166,7 @@ class MessageRateLimiter {
     return {
       isLimited: false,
       remainingRequests: this.maxRequests - 1,
-      resetTime: new Date(Date.now() + this.windowMs),
+      resetTime: this.getWindowResetTime(),
       windowMs: this.windowMs,
       currentCount: 1,
       success: true
@@ -172,7 +179,7 @@ class MessageRateLimiter {
       return {
         isLimited: false,
         remainingRequests: this.maxRequests,
-        resetTime: new Date(Date.now() + this.windowMs),
+        resetTime: this.getWindowResetTime(),
         windowMs: this.windowMs,
         currentCount: 0
       };
@@ -184,9 +191,8 @@ class MessageRateLimiter {
       const isLimited = currentCount >= this.maxRequests;
       const remainingRequests = Math.max(0, this.maxRequests - currentCount);
       
-      // Calculate reset time based on TTL (time remaining until key expires)
-      const ttl = await redis.ttl(key);
-      const resetTime = ttl > 0 ? new Date(Date.now() + (ttl * 1000)) : new Date(Date.now() + this.windowMs);
+      // Use consistent reset time based on window end
+      const resetTime = this.getWindowResetTime();
       
       return {
         isLimited,
@@ -200,7 +206,7 @@ class MessageRateLimiter {
       return {
         isLimited: false,
         remainingRequests: this.maxRequests,
-        resetTime: new Date(Date.now() + this.windowMs),
+        resetTime: this.getWindowResetTime(),
         windowMs: this.windowMs,
         currentCount: 0
       };
